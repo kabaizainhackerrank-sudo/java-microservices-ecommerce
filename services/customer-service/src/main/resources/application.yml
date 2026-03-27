@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════
+# customer-service — application.yml
+# ═══════════════════════════════════════════════════════════
+
+server:
+  port: 8082
+
+spring:
+  application:
+    name: customer-service
+
+  # ── BASE DE DATOS — Supabase PostgreSQL ──────────────────
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # ── JPA / HIBERNATE ──────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update          # NUNCA create/update en producción
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: customer  # esquema dedicado en Supabase
+
+  # ── RABBITMQ — CloudAMQP ─────────────────────────────────
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST}
+    ssl:
+      enabled: true               # CloudAMQP requiere SSL
+    listener:
+      simple:
+        acknowledge-mode: manual  # ACK manual = más control sobre errores
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          multiplier: 2.0
+
+# ── JWT ──────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET}           # misma clave que auth-service
+  expiration: 86400000
+
+# ── RABBITMQ — CONFIGURACIÓN DE DOMINIO ──────────────────────
+messaging:
+  exchange:
+    auth: auth.events             # exchange que publica auth-service
+    customer: customer.events     # exchange que publica customer-service
+  queues:
+    user-registered: user.created.queue # esta es la cola de auth-service para cuando se crea un usuario
+    customer-updated: customer.updated.queue
+    customer-status-changed: customer.status.changed.queue
+  routing-keys:
+    user-registered: user.registered
+    customer-updated: customer.updated
+    customer-status-changed: customer.status.changed
+
+# ── ACTUATOR ─────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── LOGGING ──────────────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    com.tuempresa.ecommerce.customer: DEBUG
+    org.springframework.amqp: INFO
+    org.hibernate.SQL: DEBUG

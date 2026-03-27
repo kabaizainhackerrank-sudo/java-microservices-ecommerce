@@ -1,0 +1,68 @@
+
+# ═══════════════════════════════════════════════════════════
+# catalog-service — application.yml
+# ═══════════════════════════════════════════════════════════
+
+spring:
+  application:
+    name: catalog-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update          # NUNCA create/update en producción
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: catalog   # esquema dedicado en Supabase
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST}
+    ssl:
+      enabled: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          multiplier: 2.0
+
+server:
+  port: 8083
+
+jwt:
+  secret: ${JWT_SECRET}
+
+  # ── RABBITMQ — CONFIGURACIÓN DE DOMINIO ──────────────────
+messaging:                              # ← columna 0, sin espacios
+  exchange: # se puede decir que son los carteros
+    catalog: catalog.events # exchange propio del catalog-service (digamos que es el cartero de catalog-service que llevara los mensajes)
+    order: order.events # exchange del order-service (futuro) (digamos que es el cartero de order-service que trae los mensajes)
+  queues: # se puede decir que son los buzones
+    order-confirmed: order.confirmed.queue # consume → descuenta stock (buzon donde llego ordenes confirmadas)
+    order-cancelled: order.cancelled.queue # consume → devuelve stock   (buzon donde llego ordenes canceladas)
+  routing-keys:
+    product-created: product.created
+    product-deactivated: product.deactivated
+    stock-updated: stock.updated
+    order-confirmed: order.confirmed
+    order-cancelled: order.cancelled
