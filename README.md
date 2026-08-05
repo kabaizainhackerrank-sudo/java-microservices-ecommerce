@@ -1,125 +1,170 @@
-🛒 Java Microservices E-Commerce Platform
-> Plataforma de e-commerce construida con arquitectura de microservicios, orientada a eventos, como proyecto de aprendizaje y práctica profesional.
----
-📌 Descripción
-Este proyecto simula el ciclo completo de una compra en línea: desde el registro del usuario hasta la aprobación o rechazo de una orden por un motor de riesgo/fraude.
-Está compuesto por 8 microservicios independientes, cada uno con su propia base de datos y responsabilidad de dominio. La comunicación entre servicios se realiza mediante eventos asincrónicos con RabbitMQ, evitando el acoplamiento directo entre ellos.
----
-🏗️ Arquitectura
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        API Gateway                          │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ JWT Auth
-        ┌───────────────────┼───────────────────┐
-        ▼                   ▼                   ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
-│ auth-service │   │customer-serv.│   │  catalog-service │
-│   (Java)     │   │   (Java)     │   │    (Kotlin)      │
-└──────┬───────┘   └──────────────┘   └──────────────────┘
-       │
-       │ RabbitMQ Events
-       ├──── user.created ──► customer-service
-       └──── user.created ──► notification-service
-```
-Patrón: Event-Driven Architecture  
-Mensajería: RabbitMQ (exchanges + múltiples colas)  
-Seguridad: JWT con roles por servicio
----
-📦 Servicios
-✅ Implementados
-Servicio	Lenguaje	Responsabilidad
-`auth-service`	Java	Registro, login, JWT, roles
-`customer-service`	Java	Perfil, direcciones, preferencias, estado
-`catalog-service`	Kotlin	Productos, categorías, stock, búsquedas
-🚧 En desarrollo
-Servicio	Responsabilidad
-`order-service`	Creación y gestión de órdenes
-`payment-service`	Procesamiento de pagos
-`risk-service`	Motor de detección de fraude
-`notification-service`	Emails y notificaciones
-`api-gateway`	Enrutamiento y autenticación centralizada
----
-⚙️ Stack Tecnológico
-Tecnología	Uso
-Java 17	auth-service, customer-service
-Kotlin	catalog-service
-Spring Boot 3	Framework principal
-Spring Security	Autenticación y autorización
-PostgreSQL	Base de datos por servicio
-Supabase	PostgreSQL cloud
-RabbitMQ	Mensajería asíncrona entre servicios
-CloudAMQP	RabbitMQ cloud
-JWT	Tokens de acceso
----
-🔐 Roles del sistema
-Rol	Descripción
-`CUSTOMER`	Usuario final que compra
-`ADMIN`	Administrador de la plataforma
-`RISK_ANALYST`	Analista del motor de fraude
-`SUPPORT`	Soporte al cliente
----
-🚀 Cómo ejecutar
-> Cada servicio es independiente y puede levantarse por separado.
-Requisitos
-Java 17+
-Kotlin 1.9+
-Docker (opcional)
-Cuenta en Supabase (PostgreSQL)
-Cuenta en CloudAMQP (RabbitMQ)
-Variables de entorno
-Cada servicio tiene su propio `application.yml`. Configurar las siguientes variables:
-```env
-# Base de datos
-DB_URL=jdbc:postgresql://<host>/<database>
-DB_USERNAME=<usuario>
-DB_PASSWORD=<contraseña>
+# Java Microservices E-Commerce Platform
 
-# RabbitMQ
-RABBITMQ_HOST=<host>
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=<usuario>
-RABBITMQ_PASSWORD=<contraseña>
+> Production-oriented e-commerce backend platform built with Java, Kotlin, Spring Boot and an Event-Driven Microservices Architecture.
 
-# JWT
-JWT_SECRET=<clave-secreta>
-JWT_EXPIRATION=86400000
+This project simulates the complete lifecycle of an e-commerce purchase, from user registration to order approval or rejection through a fraud/risk engine.
+
+The system is composed of independent microservices, each owning its own business domain and database. Services communicate asynchronously using RabbitMQ, following an Event-Driven Architecture that promotes loose coupling, scalability and maintainability.
+
+---
+
+# Architecture
+
+```text
+                               +----------------------+
+                               |     API Gateway      |
+                               +----------------------+
+                                          |
+                                 JWT Authentication
+                                          |
+      ----------------------------------------------------------------
+      |                     |                     |                   |
++---------------+    +---------------+    +---------------+    +---------------+
+| Auth Service  |    | Customer      |    | Catalog       |    | Order Service |
+| Java          |    | Java          |    | Kotlin        |    | Java          |
++---------------+    +---------------+    +---------------+    +---------------+
+        |                     |                     |                  |
+        +--------------------------------------------------------------+
+                               RabbitMQ Events
+                                      |
+                        Event-Driven Communication
 ```
-Ejecutar un servicio
+
+---
+
+# Architecture Highlights
+
+| Feature | Implementation |
+|----------|----------------|
+| Architecture Style | Event-Driven Microservices |
+| Communication | RabbitMQ |
+| Authentication | JWT |
+| API Gateway | Spring Cloud Gateway |
+| Databases | Database per Service |
+| Backend Languages | Java & Kotlin |
+| Containerization | Docker |
+| Build Tool | Maven / Gradle |
+
+---
+
+# Project Goals
+
+The objective of this project is to demonstrate enterprise backend development practices including:
+
+- Event-Driven Architecture
+- Microservices
+- Domain Separation
+- Asynchronous Messaging
+- JWT Authentication
+- API Gateway
+- Database per Service
+- Containerized Deployment
+- Clean and Maintainable Backend Design
+
+---
+
+# Event Flow
+
+Example:
+
+User Registration
+
+```
+User registers
+        │
+        ▼
+Auth Service
+        │
+ Publishes "user.created"
+        │
+        ▼
+RabbitMQ
+        │
+        ├────────────► Customer Service
+        │
+        └────────────► Notification Service
+```
+
+Every service reacts independently without direct coupling.
+
+---
+
+# Implemented Services
+
+| Service | Language | Responsibility |
+|----------|----------|----------------|
+| Auth Service | Java | Authentication and JWT generation |
+| Customer Service | Java | Customer management |
+| Catalog Service | Kotlin | Product catalog |
+
+---
+
+# Planned Services
+
+- Order Service
+- Inventory Service
+- Payment Service
+- Fraud Detection Service
+- Notification Service
+
+---
+
+# Technology Stack
+
+## Backend
+
+- Java
+- Kotlin
+- Spring Boot
+
+## Messaging
+
+- RabbitMQ
+
+## Security
+
+- Spring Security
+- JWT
+
+## Database
+
+- PostgreSQL
+
+## Infrastructure
+
+- Docker
+- Docker Compose
+
+---
+
+# Running the Project
+
 ```bash
-cd services/auth-service
-./mvnw spring-boot:run
+git clone ...
+
+docker compose up
+
+mvn clean install
+
+mvn spring-boot:run
 ```
+
 ---
-📡 Eventos RabbitMQ
-Exchanges (los "carteros")
-Exchange	Servicio dueño	Descripción
-`auth.events`	`auth-service`	Eventos de autenticación y registro
-`customer.events`	`customer-service`	Eventos del perfil del cliente
-`catalog.events`	`catalog-service`	Eventos de productos y stock
-`order.events`	`order-service` (futuro)	Eventos de órdenes
-Eventos publicados
-Evento (routing key)	Exchange	Publicado por	Consumido por
-`user.registered`	`auth.events`	`auth-service`	`customer-service`, `notification-service`
-`customer.updated`	`customer.events`	`customer-service`	(otros servicios)
-`customer.status.changed`	`customer.events`	`customer-service`	(otros servicios)
-`product.created`	`catalog.events`	`catalog-service`	(otros servicios)
-`product.deactivated`	`catalog.events`	`catalog-service`	(otros servicios)
-`stock.updated`	`catalog.events`	`catalog-service`	(otros servicios)
-Eventos consumidos
-Cola (buzón)	Evento	Consumido por	Acción
-`user.created.queue`	`user.registered`	`customer-service`	Crea el perfil del cliente
-`customer.updated.queue`	`customer.updated`	`customer-service`	Actualiza datos del cliente
-`customer.status.changed.queue`	`customer.status.changed`	`customer-service`	Cambia estado del cliente
-`order.confirmed.queue`	`order.confirmed`	`catalog-service`	Descuenta stock
-`order.cancelled.queue`	`order.cancelled`	`catalog-service`	Devuelve stock
+
+# Future Improvements
+
+- Distributed Tracing
+- Observability
+- Resilience4J
+- Kubernetes Deployment
+- Contract Testing
+- CI/CD Pipeline
+- Monitoring with Prometheus & Grafana
+
 ---
-🎯 Objetivo del proyecto
-Este proyecto nació con un propósito claro: construir algo real mientras buscaba trabajo como desarrollador backend.
-No espero que esté perfecto. Lo muestro mientras lo construyo, porque el proceso dice más de un dev que el resultado final.
----
-👨‍💻 Autor
-kabaizainhackerrank-sudo  
-LinkedIn · GitHub
----
-> ⭐ Si este proyecto te resulta útil o interesante, dejá una estrella. Ayuda a que más personas lo encuentren.
+
+# Author
+
+Backend Engineering Portfolio Project
+
+Designed and implemented as a hands-on project to demonstrate modern enterprise backend development using Java, Kotlin and Spring Boot.
