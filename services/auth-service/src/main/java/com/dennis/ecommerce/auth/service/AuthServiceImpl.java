@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserEventPublisher userEventPublisher;
+    private final OutboxEventService outboxEventService;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
@@ -55,8 +55,9 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        // Publicar evento
-        userEventPublisher.publishUserCreated(
+        // Guardar evento en outbox — dentro de la misma transacción
+        outboxEventService.saveEvent(
+                "user.created",
                 new UserCreatedEvent(user.getId(), user.getEmail(), user.getRole().name())
         );
 

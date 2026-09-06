@@ -1,5 +1,6 @@
 package com.dennis.ecommerce.customerservice.service;
 
+import com.dennis.ecommerce.auth.event.UserCreatedEvent;
 import com.dennis.ecommerce.customerservice.domain.entity.Customer;
 import com.dennis.ecommerce.customerservice.domain.entity.CustomerStatusHistory;
 import com.dennis.ecommerce.customerservice.domain.enums.CustomerStatus;
@@ -12,6 +13,7 @@ import com.dennis.ecommerce.customerservice.exception.CustomerAlreadyExistsExcep
 import com.dennis.ecommerce.customerservice.exception.CustomerNotFoundException;
 import com.dennis.ecommerce.customerservice.mapper.CustomerMapper;
 import com.dennis.ecommerce.customerservice.mapper.CustomerStatusHistoryMapper;
+import com.dennis.ecommerce.customerservice.messaging.event.CustomerStatusChangedEvent;
 import com.dennis.ecommerce.customerservice.messaging.publisher.CustomerStatusChangedPublisher;
 import com.dennis.ecommerce.customerservice.messaging.publisher.CustomerUpdatedPublisher;
 import com.dennis.ecommerce.customerservice.repository.CustomerRepository;
@@ -36,6 +38,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerStatusHistoryMapper statusHistoryMapper;
     private final CustomerUpdatedPublisher customerUpdatedPublisher;
     private final CustomerStatusChangedPublisher customerStatusChangedPublisher;
+    private final OutboxEventService outboxEventService;
 
     @Override
     @Transactional
@@ -108,6 +111,19 @@ public class CustomerServiceImpl implements CustomerService {
         Customer updated = customerRepository.save(customer);
 
         log.info("Customer {} cambió de {} a {}", customerId, previousStatus, newStatus);
+
+        // Guardar evento en outbox — dentro de la misma transacción
+        outboxEventService.saveEvent(
+                "customer.status.changed",
+                CustomerStatusChangedEvent.builder()
+                        .customerId(updated.getCustomerId())
+                        .userId(updated.getUserId())
+                        .previousStatus(previousStatus)
+                        .newStatus(newStatus)
+                        .reason(request.getReason())
+                        .build()
+        );
+
         customerStatusChangedPublisher.publish(updated, previousStatus);
 
         return customerMapper.toResponse(updated);
